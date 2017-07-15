@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:json="http://www.mulesoft.org/schema/mule/json" xmlns:context="http://www.springframework.org/schema/context" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-current.xsd
+http://www.mulesoft.org/schema/mule/json http://www.mulesoft.org/schema/mule/json/current/mule-json.xsd">
+    <http:listener-config name="Salesforce_Listener_Configuration" host="0.0.0.0" port="8999" doc:name="HTTP Listener Configuration"/>
+    <context:property-placeholder location="${env}.properties"/>
+    <sub-flow name="bussines-flow">
+        <logger message="#[payload]" level="INFO" doc:name="Logger"/>
+        <set-payload value="{                 &quot;codeOperation&quot;: 350,                 &quot;data&quot;: [                   {                     &quot;register&quot;: 3670,                      &quot;dealer&quot;: &quot;BMW&quot;,                     &quot;company&quot;: &quot;CDK-UK&quot;,                     &quot;localization&quot;: [                       {                         &quot;country&quot;: &quot;UK&quot;,                         &quot;city&quot;: &quot;Birmingham&quot;,                         &quot;street&quot;: &quot;WilliamRoad&quot;,                         &quot;number&quot;: 10                       }                      ]                   }                 ]               }" mimeType="application/java" doc:name="Set Payload"/>
+        <json:object-to-json-transformer doc:name="Object to JSON"/>
+    </sub-flow>
+    <flow name="Get_Operation_Salesforce">
+        <http:listener config-ref="Salesforce_Listener_Configuration" path="/operation" allowedMethods="GET" doc:name="GET"/>
+        <message-property-filter pattern="#[message.inboundProperties['http.request']!='favicon.ico']" caseSensitive="true" doc:name="Favicon"/>
+        <flow-ref name="bussines-flow" doc:name="bussines flow"/>
+        <exception-strategy ref="global-exception-handlerChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+    <flow name="Post_Lead_Salesforce">
+        <http:listener config-ref="Salesforce_Listener_Configuration" path="/lead" allowedMethods="POST" doc:name="POST"/>
+        <message-filter doc:name="Message">
+            <payload-type-filter expectedType="org.mule.module.json.JsonData"/>
+        </message-filter>
+        <flow-ref name="bussines-flow" doc:name="bussines-flow"/>
+        <exception-strategy ref="global-exception-handlerChoice_Exception_Strategy" doc:name="Reference Exception Strategy"/>
+    </flow>
+</mule>
